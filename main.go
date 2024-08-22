@@ -12,7 +12,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
+	"github.com/vodolaz095/go-investAPI/investapi"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
+	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
+	investapi_reader "github.com/vodolaz095/stocks_broadcaster/internal/transport/reader/invest_api"
 	"github.com/vodolaz095/stocks_broadcaster/model"
 	"github.com/vodolaz095/stocks_broadcaster/pkg/healthcheck"
 
@@ -57,13 +60,22 @@ func main() {
 	)
 
 	// configure writers
+	investApiClient, err := investapi.New(cfg.Token)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("error connecting invest api: %s", err)
+	}
+	iaReader := investapi_reader.Reader{
+		Connection:   investApiClient,
+		ReadInterval: investapi_reader.DefaultReadInterval,
+		Instruments:  cfg.Instruments,
+	}
 
 	// configure readers
 
 	// configure service
 	srv := service.Broadcaster{
 		Cord:    make(chan model.Update, service.DefaultChannelBuffer),
-		Readers: nil,
+		Readers: []reader.StocksReader{&iaReader},
 		Writers: nil,
 	}
 
