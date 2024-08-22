@@ -1,0 +1,44 @@
+export majorVersion=1
+export minorVersion=0
+
+export gittip=$(shell git log --format='%h' -n 1)
+export patchVersion=$(shell git log --format='%h' | wc -l)
+export ver=$(majorVersion).$(minorVersion).$(patchVersion).$(gittip)
+
+tools:
+	@which podman
+	@podman version
+	@which redis-cli
+	@redis-cli --version
+	@which go
+	@go version
+
+# https://go.dev/blog/govulncheck
+# install it by go install golang.org/x/vuln/cmd/govulncheck@latest
+vuln:
+	which govulncheck
+	govulncheck ./...
+
+deps:
+	go mod download
+	go mod verify
+	go mod tidy
+
+test:
+	go test -v ./...
+
+run: start
+
+build: deps
+	CGO_ENABLED=0 go build -ldflags "-X main.Version=$(ver)" -o build/stocks_broadcaster main.go
+
+start:
+	go run main.go ./contrib/stocks_broadcaster.yaml
+
+binary: build
+	./build/stocks_broadcaster contrib/stocks_broadcaster.yaml
+
+tag:
+	git tag "v$(majorVersion).$(minorVersion).$(patchVersion)"
+
+.PHONY: build
