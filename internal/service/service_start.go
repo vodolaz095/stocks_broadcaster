@@ -8,9 +8,9 @@ import (
 )
 
 func (b *Broadcaster) Start(ctx context.Context) (err error) {
-	if len(b.Writers) == 0 {
-		return fmt.Errorf("no writers defined")
-	}
+	//if len(b.Writers) == 0 {
+	//	return fmt.Errorf("no writers defined")
+	//}
 	if len(b.Readers) == 0 {
 		return fmt.Errorf("no readers defined")
 	}

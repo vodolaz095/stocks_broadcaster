@@ -4,6 +4,7 @@ import "gopkg.in/yaml.v3"
 
 type Instrument struct {
 	FIGI    string `yaml:"figi"`
+	Name    string `yaml:"name"`
 	Channel string `yaml:"channel"`
 }
 

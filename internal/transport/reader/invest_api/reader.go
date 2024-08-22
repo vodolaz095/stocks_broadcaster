@@ -54,11 +54,12 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 		return fmt.Errorf("error subscribing to feed: %w", err)
 	}
 	defer stream.CloseSend()
-	ticker := time.NewTicker(10 * time.Millisecond)
+	ticker := time.NewTicker(r.ReadInterval)
 	defer ticker.Stop()
 
 	defer log.Info().Msgf("Closing subscription for %v instruments", len(r.Instruments))
 	var msg *investapi.MarketDataResponse
+	var lastPrice *investapi.LastPrice
 	for {
 		select {
 		case <-ctx.Done():
@@ -70,6 +71,11 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 				continue
 			}
 			log.Trace().Msgf("Message received: %s", msg.String())
+			lastPrice = msg.GetLastPrice()
+			if lastPrice != nil {
+				log.Debug().Msgf("Instrument %s has last lot price %.4f",
+					lastPrice.GetFigi(), lastPrice.GetPrice().ToFloat64())
+			}
 		}
 	}
 }
