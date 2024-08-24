@@ -50,7 +50,7 @@ func (b *Broadcaster) StartWriters(ctx context.Context) (err error) {
 					return
 				case upd = <-feed:
 					chanName, found1 := b.FigiChannel[upd.Name]
-					figiName, found2 := b.FigiChannel[upd.Name]
+					figiName, found2 := b.FigiName[upd.Name]
 					if found1 && found2 {
 						feedErr = b.Writers[j].Write(ctx, chanName, model.Update{
 							Name:      figiName,

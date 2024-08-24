@@ -17,4 +17,4 @@ services:
       context: ./
       dockerfile: ./Dockerfile_development
     volumes:
-      - ./contrib/stocks_broadcaster.yaml:/etc/stocks_broadcaster.yaml:Z,U
+      - ./contrib/container.yaml:/etc/stocks_broadcaster.yaml:Z,U

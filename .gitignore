@@ -1,4 +1,4 @@
 .idea/
-contrib/stocks_broadcaster.yaml
-contrib/stocks_broadcaster_docker.yaml
+contrib/container.yaml
+contrib/local.yaml
 
