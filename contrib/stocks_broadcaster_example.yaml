@@ -1,8 +1,11 @@
-token: "secret"
-redis_url: "redis://127.0.0.1:6379"
-log:
-  level: trace
-  to_journald: false
+inputs:
+  - name: "default"
+    token: "secret"
+    figis:
+      - "BBG333333333"
+      - "BBG004730RP0"
+      - "BBG00475KKY8"
+
 instruments:
   - figi: "BBG333333333"
     name: "tmos"
@@ -13,3 +16,11 @@ instruments:
   - figi: "BBG00475KKY8"
     name: "NVTK"
     channel: "stocks/NVTK"
+
+outputs:
+  - name: "container"
+    redis_url: "redis://127.0.0.1:6379"
+
+log:
+  level: trace
+  to_journald: false

@@ -63,24 +63,34 @@ func main() {
 	)
 
 	// configure readers
-	investApiClient, err := investapi.New(cfg.Token)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("error connecting invest api: %s", err)
-	}
-	iaReader := investapi_reader.Reader{
-		Connection:   investApiClient,
-		ReadInterval: investapi_reader.DefaultReadInterval,
-		Instruments:  cfg.Instruments,
+	var readers []reader.StocksReader
+	for i := range cfg.Inputs {
+		investApiClient, err1 := investapi.New(cfg.Inputs[i].Token)
+		if err != nil {
+			log.Fatal().
+				Err(err1).
+				Msgf("error connecting invest api: %s", err1)
+		}
+		readers = append(readers, &investapi_reader.Reader{
+			Description:  cfg.Inputs[i].Name,
+			Connection:   investApiClient,
+			ReadInterval: investapi_reader.DefaultReadInterval,
+			Instruments:  cfg.Inputs[i].Figis,
+		})
 	}
 
 	// configure writers
-	redisOpts, err := redis.ParseURL(cfg.RedisURL)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("error parsing redis connection string %s: %s", cfg.RedisURL, err)
-	}
-	client := redis.NewClient(redisOpts)
-	rw := redisWriter.Writer{
-		Client: client,
+	var writers []writer.StocksWriter
+	for i := range cfg.Outputs {
+		redisOpts, err2 := redis.ParseURL(cfg.Outputs[i].RedisURL)
+		if err2 != nil {
+			log.Fatal().Err(err2).Msgf("error parsing redis connection string %s from %v: %s",
+				cfg.Outputs[i].RedisURL, i, err2)
+		}
+		writers = append(writers, &redisWriter.Writer{
+			Description: cfg.Outputs[i].Name,
+			Client:      redis.NewClient(redisOpts),
+		})
 	}
 
 	// configure service
@@ -88,8 +98,8 @@ func main() {
 		FigiName:    make(map[string]string, 0),
 		FigiChannel: make(map[string]string, 0),
 		Cord:        make(chan model.Update, service.DefaultChannelBuffer),
-		Readers:     []reader.StocksReader{&iaReader}, // todo - MORE!
-		Writers:     []writer.StocksWriter{&rw},       // todo - MORE!
+		Readers:     readers, // todo - MORE!
+		Writers:     writers, // todo - MORE!
 	}
 	// configure service routing
 	for i := range cfg.Instruments {

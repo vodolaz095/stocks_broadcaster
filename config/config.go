@@ -2,16 +2,27 @@ package config
 
 import "gopkg.in/yaml.v3"
 
+type Input struct {
+	Name  string   `yaml:"name"  validate:"required"`
+	Token string   `yaml:"token" validate:"required"`
+	Figis []string `yaml:"figis" validate:"required"`
+}
+
+type Output struct {
+	Name     string `yaml:"name" validate:"required"`
+	RedisURL string `yaml:"redis_url" validate:"required"`
+}
+
 type Instrument struct {
-	FIGI    string `yaml:"figi"`
-	Name    string `yaml:"name"`
-	Channel string `yaml:"channel"`
+	FIGI    string `yaml:"figi" validate:"required"`
+	Name    string `yaml:"name" validate:"required"`
+	Channel string `yaml:"channel" validate:"required"`
 }
 
 type Config struct {
-	Token       string       `yaml:"token" validate:"required"`
+	Inputs      []Input      `yaml:"inputs" validate:"required"`
 	Instruments []Instrument `yaml:"instruments" validate:"required"`
-	RedisURL    string       `yaml:"redis_url" validate:"required"`
+	Outputs     []Output     `yaml:"outputs" validate:"required"`
 	Log         Log          `yaml:"log" validate:"required"`
 }
 

@@ -80,7 +80,8 @@ func (b *Broadcaster) Start(ctx context.Context) (err error) {
 		return NoReadersError
 	}
 	if cap(b.Cord) < DefaultChannelBuffer {
-		return fmt.Errorf("channel buffer is %v, while at least 100 is recommended", cap(b.Cord))
+		return fmt.Errorf("channel buffer is %v, while at least %v is recommended",
+			cap(b.Cord), DefaultChannelBuffer)
 	}
 	go func() {
 		var upd model.Update

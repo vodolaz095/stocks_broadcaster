@@ -35,7 +35,7 @@ build: deps
 	CGO_ENABLED=0 go build -ldflags "-X main.Version=$(ver)" -o build/stocks_broadcaster main.go
 
 start:
-	go run main.go ./contrib/stocks_broadcaster.yaml
+	go run main.go ./contrib/local.yaml
 
 binary: build
 	./build/stocks_broadcaster contrib/stocks_broadcaster.yaml

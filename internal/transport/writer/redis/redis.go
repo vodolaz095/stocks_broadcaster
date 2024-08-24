@@ -8,11 +8,12 @@ import (
 )
 
 type Writer struct {
-	Client *redis.Client
+	Description string
+	Client      *redis.Client
 }
 
 func (w *Writer) Name() string {
-	return "redis publisher"
+	return w.Description
 }
 
 func (w *Writer) Ping(ctx context.Context) error {

@@ -11,21 +11,21 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/model"
 )
 
 const DefaultReadInterval = 10 * time.Millisecond
 
 type Reader struct {
+	Description  string
 	Connection   *investapi.Client
 	ReadInterval time.Duration
 	Token        string
-	Instruments  []config.Instrument
+	Instruments  []string
 }
 
 func (r *Reader) Name() string {
-	return "InvestAPI reader"
+	return "InvestAPI reader " + r.Description
 }
 
 func (r *Reader) Ping(ctx context.Context) error {
@@ -47,7 +47,7 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 	var upd model.Update
 	var instruments []*investapi.LastPriceInstrument
 	for i := range r.Instruments {
-		instruments = append(instruments, &investapi.LastPriceInstrument{Figi: r.Instruments[i].FIGI})
+		instruments = append(instruments, &investapi.LastPriceInstrument{Figi: r.Instruments[i]})
 	}
 	//  подписываемся на цену крайней сделки по акциям
 	request := investapi.MarketDataServerSideStreamRequest{

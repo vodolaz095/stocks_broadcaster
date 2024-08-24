@@ -8,7 +8,7 @@ import (
 var testConfig Config
 
 func TestLoadFromFile(t *testing.T) {
-	cfg, err := LoadFromFile("./../contrib/stocks_broadcaster.yaml")
+	cfg, err := LoadFromFile("./../contrib/stocks_broadcaster_example.yaml")
 	if err != nil {
 		t.Error(err)
 		return
