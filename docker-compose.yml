@@ -11,3 +11,10 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
+  broadcaster:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile_development
+    volumes:
+      - ./contrib/stocks_broadcaster.yaml:/etc/stocks_broadcaster.yaml:Z,U
