@@ -9,4 +9,4 @@ podman/down:
 	podman-compose down
 
 podman/prune:
-	podman system prune --a --volumes
+	podman system prune -a --volumes
