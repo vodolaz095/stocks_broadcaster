@@ -28,10 +28,47 @@ func (b *Broadcaster) startReaders(ctx context.Context) (err error) {
 				err = startErr
 				return
 			}
-			log.Debug().Msgf("Reader #%v %s is started!", j, b.Readers[j].Name())
 		}(i)
 	}
 	wg.Wait()
+	log.Debug().Msgf("%v readers are closing", len(b.Readers))
+	return err
+}
+
+func (b *Broadcaster) StartWriters(ctx context.Context) (err error) {
+	for i := range b.Writers {
+		go func(j int) {
+			var upd model.Update
+			feed, feedErr := b.Subscribe(ctx, fmt.Sprintf("writer %v %s", j, b.Writers[j].Name()))
+			if feedErr != nil {
+				err = feedErr
+				return
+			}
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case upd = <-feed:
+					chanName, found1 := b.FigiChannel[upd.Name]
+					figiName, found2 := b.FigiChannel[upd.Name]
+					if found1 && found2 {
+						feedErr = b.Writers[j].Write(ctx, chanName, model.Update{
+							Name:      figiName,
+							Value:     upd.Value,
+							Error:     upd.Error,
+							Timestamp: upd.Timestamp,
+						})
+						if feedErr != nil {
+							log.Error().Err(feedErr).
+								Msgf("error publishing stock data to writer %v %s (%v) : %s",
+									j, b.Writers[j].Name(), upd, feedErr,
+								)
+						}
+					}
+				}
+			}
+		}(i)
+	}
 	return err
 }
 

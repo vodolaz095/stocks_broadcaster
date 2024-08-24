@@ -32,8 +32,15 @@ func (r *Reader) Ping(ctx context.Context) error {
 	return r.Connection.Ping(ctx)
 }
 
-func (r *Reader) Close(_ context.Context) error {
-	return r.Connection.Connection.Close()
+func (r *Reader) Close(_ context.Context) (err error) {
+	err = r.Connection.Connection.Close()
+	code, ok := status.FromError(err)
+	if ok {
+		if code.Code() == codes.Canceled {
+			return nil
+		}
+	}
+	return err
 }
 
 func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err error) {

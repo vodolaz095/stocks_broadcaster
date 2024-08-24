@@ -144,9 +144,13 @@ func main() {
 	}()
 
 	// main loop
+	err = srv.StartWriters(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Error starting writers: %s", err)
+	}
 	err = srv.Start(ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("Error starting broadcaster: %s", err)
+		log.Fatal().Err(err).Msgf("Error starting system: %s", err)
 	}
 
 	// closing
