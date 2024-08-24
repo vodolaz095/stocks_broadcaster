@@ -9,7 +9,14 @@ import (
 const DefaultChannelBuffer = 100
 
 type Broadcaster struct {
+	FigiName    map[string]string
+	FigiChannel map[string]string
+
 	Cord    chan model.Update
 	Readers []reader.StocksReader
 	Writers []writer.StocksWriter
+
+	// subscribers are used updates to different transports - redis publishers,
+	// influx, etc...
+	subscribers map[string]chan model.Update
 }

@@ -11,15 +11,18 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
+
+	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
 	investapi_reader "github.com/vodolaz095/stocks_broadcaster/internal/transport/reader/invest_api"
+	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
+	redisWriter "github.com/vodolaz095/stocks_broadcaster/internal/transport/writer/redis"
 	"github.com/vodolaz095/stocks_broadcaster/model"
 	"github.com/vodolaz095/stocks_broadcaster/pkg/healthcheck"
-
-	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/pkg/zerologger"
 )
 
@@ -59,7 +62,7 @@ func main() {
 		"https://github.com/vodolaz095/stocks_broadcaster/issues",
 	)
 
-	// configure writers
+	// configure readers
 	investApiClient, err := investapi.New(cfg.Token)
 	if err != nil {
 		log.Fatal().Err(err).Msgf("error connecting invest api: %s", err)
@@ -70,13 +73,28 @@ func main() {
 		Instruments:  cfg.Instruments,
 	}
 
-	// configure readers
+	// configure writers
+	redisOpts, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("error parsing redis connection string %s: %s", cfg.RedisURL, err)
+	}
+	client := redis.NewClient(redisOpts)
+	rw := redisWriter.Writer{
+		Client: client,
+	}
 
 	// configure service
 	srv := service.Broadcaster{
-		Cord:    make(chan model.Update, service.DefaultChannelBuffer),
-		Readers: []reader.StocksReader{&iaReader},
-		Writers: nil,
+		FigiName:    make(map[string]string, 0),
+		FigiChannel: make(map[string]string, 0),
+		Cord:        make(chan model.Update, service.DefaultChannelBuffer),
+		Readers:     []reader.StocksReader{&iaReader}, // todo - MORE!
+		Writers:     []writer.StocksWriter{&rw},       // todo - MORE!
+	}
+	// configure service routing
+	for i := range cfg.Instruments {
+		srv.FigiName[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Name
+		srv.FigiChannel[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Channel
 	}
 
 	// set systemd watchdog

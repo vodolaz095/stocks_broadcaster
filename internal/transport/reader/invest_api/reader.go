@@ -3,10 +3,14 @@ package invest_api
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/model"
 )
@@ -33,6 +37,7 @@ func (r *Reader) Close(_ context.Context) error {
 }
 
 func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err error) {
+	var upd model.Update
 	var instruments []*investapi.LastPriceInstrument
 	for i := range r.Instruments {
 		instruments = append(instruments, &investapi.LastPriceInstrument{Figi: r.Instruments[i].FIGI})
@@ -49,33 +54,48 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 		},
 	}
 	feed := investapi.NewMarketDataStreamServiceClient(r.Connection.Connection)
-	stream, err := feed.MarketDataServerSideStream(context.TODO(), &request)
+	stream, err := feed.MarketDataServerSideStream(ctx, &request)
 	if err != nil {
 		return fmt.Errorf("error subscribing to feed: %w", err)
 	}
-	defer stream.CloseSend()
-	ticker := time.NewTicker(r.ReadInterval)
-	defer ticker.Stop()
-
-	defer log.Info().Msgf("Closing subscription for %v instruments", len(r.Instruments))
 	var msg *investapi.MarketDataResponse
 	var lastPrice *investapi.LastPrice
+	go func() {
+		<-ctx.Done()
+		log.Info().Msgf("Closing grpc subscription for %v instruments", len(r.Instruments))
+		// https://github.com/grpc/grpc-go/issues/3230#issuecomment-562061037
+		r.Connection.Connection.Close()
+	}()
 	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			msg, err = stream.Recv()
-			if err != nil {
+		msg, err = stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				log.Debug().Msgf("Closing grpc subscription loop")
+				break
+			}
+			code, ok := status.FromError(err)
+			if !ok {
 				log.Error().Err(err).Msgf("subscription error: %s", err)
 				continue
 			}
-			log.Trace().Msgf("Message received: %s", msg.String())
-			lastPrice = msg.GetLastPrice()
-			if lastPrice != nil {
-				log.Debug().Msgf("Instrument %s has last lot price %.4f",
-					lastPrice.GetFigi(), lastPrice.GetPrice().ToFloat64())
+			if code.Code() != codes.Canceled {
+				log.Error().Err(err).Msgf("subscription error: %s", err)
 			}
+			continue
+		}
+		log.Trace().Msgf("Message received: %s", msg.String())
+		lastPrice = msg.GetLastPrice()
+		if lastPrice != nil { // this is actual last price message
+			log.Debug().Msgf("Instrument %s has last lot price %.4f",
+				lastPrice.GetFigi(), lastPrice.GetPrice().ToFloat64())
+			upd = model.Update{
+				Name:      lastPrice.GetFigi(),
+				Value:     lastPrice.Price.ToFloat64(),
+				Error:     "",
+				Timestamp: lastPrice.Time.AsTime(),
+			}
+			updateFeed <- upd
 		}
 	}
+	return err
 }

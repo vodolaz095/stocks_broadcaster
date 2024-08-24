@@ -5,6 +5,8 @@ export gittip=$(shell git log --format='%h' -n 1)
 export patchVersion=$(shell git log --format='%h' | wc -l)
 export ver=$(majorVersion).$(minorVersion).$(patchVersion).$(gittip)
 
+include make/*.mk
+
 tools:
 	@which podman
 	@podman version

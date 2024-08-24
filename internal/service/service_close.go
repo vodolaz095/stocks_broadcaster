@@ -25,7 +25,7 @@ func (b *Broadcaster) Close(ctx context.Context) (err error) {
 			)
 			return err
 		}
-		log.Debug().Msgf("close: writer %s is terminated", b.Readers[i].Name())
+		log.Debug().Msgf("close: writer %s is terminated", b.Writers[i].Name())
 	}
 	log.Info().Msgf("close: system is stopped")
 	return nil

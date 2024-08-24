@@ -9,5 +9,5 @@ import (
 
 type StocksWriter interface {
 	transport.Transport
-	Start(ctx context.Context, feed chan model.Update) error
+	Write(ctx context.Context, channel string, upd model.Update) error
 }
