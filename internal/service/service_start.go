@@ -22,7 +22,9 @@ func (b *Broadcaster) startReaders(ctx context.Context) (err error) {
 			defer wg.Done()
 			startErr := b.Readers[j].Start(ctx, b.Cord)
 			if startErr != nil {
-				log.Error().Err(startErr).Msgf("Error starting reader %v: %s", j, startErr)
+				log.Error().
+					Err(startErr).
+					Msgf("Error starting reader %v: %s", j, startErr)
 				err = startErr
 				return
 			}

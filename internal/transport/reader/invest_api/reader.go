@@ -76,12 +76,15 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 			code, ok := status.FromError(err)
 			if !ok {
 				log.Error().Err(err).Msgf("subscription error: %s", err)
-				continue
+				break
 			}
-			if code.Code() != codes.Canceled {
+			if code.Code() == codes.Canceled {
+				log.Debug().Msgf("Connection is canceled")
+				return nil
+			} else {
 				log.Error().Err(err).Msgf("subscription error: %s", err)
 			}
-			continue
+			break
 		}
 		log.Trace().Msgf("Message received: %s", msg.String())
 		lastPrice = msg.GetLastPrice()

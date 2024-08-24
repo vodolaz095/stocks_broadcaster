@@ -5,4 +5,11 @@ log:
   to_journald: false
 instruments:
   - figi: "BBG333333333"
+    name: "tmos"
     channel: "stocks/tmos"
+  - figi: "BBG004730RP0"
+    name: "GAZP"
+    channel: "stocks/gazp"
+  - figi: "BBG00475KKY8"
+    name: "NVTK"
+    channel: "stocks/NVTK"
