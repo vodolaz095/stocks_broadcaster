@@ -3,7 +3,7 @@ podman/up:
 	podman ps
 
 podman/resource:
-	podman-compose up -d redis mariadb postgres influx
+	podman-compose up -d redis
 
 podman/down:
 	podman-compose down

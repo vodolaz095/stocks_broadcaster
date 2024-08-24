@@ -6,7 +6,7 @@ docker/up:
 	docker ps
 
 docker/resource:
-	podman up -d redis mariadb postgresql influx
+	podman up -d redis
 
 docker/down:
 	docker compose down
