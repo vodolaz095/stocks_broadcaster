@@ -1,8 +1,12 @@
 inputs:
-  - name: "default"
-    token: "secret"
+  - name: "subscriber1"
+    token: "secret1" # https://tinkoff.github.io/investAPI/grpc/#tinkoff-invest-api_1
     figis:
       - "BBG333333333"
+
+  - name: "subscriber2"
+    token: "secret2" # https://tinkoff.github.io/investAPI/grpc/#tinkoff-invest-api_1
+    figis:
       - "BBG004730RP0"
       - "BBG00475KKY8"
 
@@ -19,8 +23,8 @@ instruments:
 
 outputs:
   - name: "container"
-    redis_url: "redis://127.0.0.1:6379"
+    redis_url: "redis://127.0.0.1:6379" # syntax - https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL
 
 log:
-  level: trace
+  level: trace # can be `trace`,`debug`,`info`,`warn`,`error` - info is usual.
   to_journald: false

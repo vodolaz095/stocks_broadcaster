@@ -69,7 +69,8 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 	var lastPrice *investapi.LastPrice
 	go func() {
 		<-ctx.Done()
-		log.Info().Msgf("Closing grpc subscription for %v instruments", len(r.Instruments))
+		log.Info().Msgf("Reader %s is closing grpc subscription for %v instruments",
+			r.Name(), len(r.Instruments))
 		// https://github.com/grpc/grpc-go/issues/3230#issuecomment-562061037
 		r.Connection.Connection.Close()
 	}()
@@ -77,27 +78,27 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 		msg, err = stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				log.Debug().Msgf("Closing grpc subscription loop")
+				log.Debug().Msgf("Closing grpc subscription loop for %s", r.Name())
 				break
 			}
 			code, ok := status.FromError(err)
 			if !ok {
-				log.Error().Err(err).Msgf("subscription error: %s", err)
+				log.Error().Err(err).Msgf("subscription error %s: %s", r.Name(), err)
 				break
 			}
 			if code.Code() == codes.Canceled {
-				log.Debug().Msgf("Connection is canceled")
+				log.Debug().Msgf("Connection for %s is canceled", r.Name())
 				return nil
 			} else {
-				log.Error().Err(err).Msgf("subscription error: %s", err)
+				log.Error().Err(err).Msgf("subscription error for %s: %s", r.Name(), err)
 			}
 			break
 		}
-		log.Trace().Msgf("Message received: %s", msg.String())
+		log.Trace().Msgf("Reader %s received: %s", r.Name(), msg.String())
 		lastPrice = msg.GetLastPrice()
 		if lastPrice != nil { // this is actual last price message
-			log.Debug().Msgf("Instrument %s has last lot price %.4f",
-				lastPrice.GetFigi(), lastPrice.GetPrice().ToFloat64())
+			log.Debug().Msgf("Reader %s: instrument %s has last lot price %.4f",
+				r.Name(), lastPrice.GetFigi(), lastPrice.GetPrice().ToFloat64())
 			upd = model.Update{
 				Name:      lastPrice.GetFigi(),
 				Value:     lastPrice.Price.ToFloat64(),

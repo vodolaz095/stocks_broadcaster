@@ -57,8 +57,7 @@ func main() {
 	zerologger.Configure(cfg.Log)
 
 	log.Info().Msgf("Starting StockBroadcaster version %s. GOOS: %s. ARCH: %s. Go Version: %s. Please, report bugs here: %s",
-		Version,
-		runtime.GOOS, runtime.GOARCH, runtime.Version(),
+		Version, runtime.GOOS, runtime.GOARCH, runtime.Version(),
 		"https://github.com/vodolaz095/stocks_broadcaster/issues",
 	)
 
@@ -98,8 +97,8 @@ func main() {
 		FigiName:    make(map[string]string, 0),
 		FigiChannel: make(map[string]string, 0),
 		Cord:        make(chan model.Update, service.DefaultChannelBuffer),
-		Readers:     readers, // todo - MORE!
-		Writers:     writers, // todo - MORE!
+		Readers:     readers,
+		Writers:     writers,
 	}
 	// configure service routing
 	for i := range cfg.Instruments {
@@ -171,6 +170,7 @@ func main() {
 	if err != nil {
 		log.Error().Err(err).
 			Msgf("Error terminating application, something can be broken: %s", err)
+	} else {
+		log.Info().Msgf("Stocks Broadcaster is terminated.")
 	}
-	log.Info().Msgf("Stocks Broadcaster is terminated.")
 }
