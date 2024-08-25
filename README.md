@@ -1,9 +1,9 @@
 Stocks Broadcaster
 =================================
 Application subscribes to [GRPC stream](https://tinkoff.github.io/investAPI/marketdata/#marketdataserversidestream)
-with last prices and broadcasts data via redis server to trade bots.
+with last prices and broadcasts by pub/sub channels data via redis server to trade bots.
 
-Приложение подписывается на GRPC-поток и транслирует котировки через потоки базы данных redis для торговых ботов.
+Приложение подписывается на GRPC-поток и транслирует котировки через каналы (pub/sub channels) базы данных redis для торговых ботов.
 
 Create broker account / Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
 

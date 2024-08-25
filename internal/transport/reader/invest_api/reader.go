@@ -107,6 +107,9 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 			}
 			updateFeed <- upd
 		}
+		if msg.GetPing() != nil {
+			log.Debug().Msgf("Reader %s: connection is alive", r.Name())
+		}
 	}
 	return err
 }
