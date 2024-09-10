@@ -6,6 +6,8 @@ with last prices and broadcasts by pub/sub channels data via redis server to tra
 Приложение подписывается на GRPC-поток и транслирует котировки через каналы (pub/sub channels) базы данных redis для торговых ботов.
 
 Create broker account / Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
+Поддержать разработчика - https://www.tinkoff.ru/rm/ostroumov.anatoliy2/4HFzm76801/
+
 
 Постановка задания
 ================================
