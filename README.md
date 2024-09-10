@@ -59,11 +59,31 @@ Configuration example / Образец конфигурации
 Key meaning / Значение ключей конфигурации
 
 ***input***
-Define inputs' parameters - trade api token and FIGI of instruments to subscribe / Задать параметры ввода - токен подключения
-к API и FIGI инструментов, на котировки которых нужно подписаться
+
+Define inputs' parameters - trade api token, local network address (can be omitted) and FIGI of instruments to subscribe. 
+Задать параметры ввода - токен подключения к API, локальный сетевой адрес (необязательно) и FIGI инструментов, на котировки которых нужно подписаться.
+
+```yaml
+
+inputs:
+  - name: "etfs"
+    token: "<<<SECRET1>>>"
+    figis:
+      - "BBG333333333"
+      - ...
+    local_addr: "192.168.12.2"
+  - name: "stocks"
+    token: "<<<SECRET2>>>"
+    figis:
+      - "BBG004730RP0"
+      - "BBG00475KKY8"
+      - ...
+
+```
 
 ***instruments***
-Define parameters to render and route last price messages via redis pub/sub channels / 
+
+Define parameters to render and route last price messages via redis pub/sub channels. 
 Задаёт направление и формат сообщения котировок, которое будет посылаться в каналы редиса. 
 
 ```yaml
@@ -82,8 +102,9 @@ instruments:
 ```
 
 ***outputs***
-Define name and connection string for redis servers to broadcast last price updates /
-задать название и строку соединения до сервера redis, куда будут передаваться котировки.
+
+Define name and connection string for redis servers to broadcast last price updates
+Задать название и строку соединения до сервера redis, куда будут передаваться котировки.
 
 
 Message format - JSON in UTF8 encoding / формат сообщения JSON в кодировке UTF-8
@@ -97,8 +118,8 @@ Message format - JSON in UTF8 encoding / формат сообщения JSON в
 }
 ```
 
-Message is published in channel defined in `channel` key of config / ключ конфигурации `channel` задаёт название канала,
-куда публикуется сообщение.
+Message is published in channel defined in `channel` key of config. 
+Ключ конфигурации `channel` задаёт название канала, куда публикуется сообщение.
 
 
 Example / Пример:
@@ -123,7 +144,9 @@ will publish message to / опубликует сообщение
 
 
 ***log***
-Define logging parameters / Задать параметры логирования
+
+Define logging parameters.
+Задать параметры логирования
 
 Development using golang compiler on host machine
 =============================
