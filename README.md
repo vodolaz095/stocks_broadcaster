@@ -6,8 +6,8 @@ with last prices and broadcasts by pub/sub channels data via redis server to tra
 Приложение подписывается на GRPC-поток и транслирует котировки через каналы (pub/sub channels) базы данных redis для торговых ботов.
 
 Create broker account / Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
-Поддержать разработчика - https://www.tinkoff.ru/rm/ostroumov.anatoliy2/4HFzm76801/
 
+Поддержать разработчика - https://www.tinkoff.ru/rm/ostroumov.anatoliy2/4HFzm76801/
 
 Постановка задания
 ================================
@@ -124,3 +124,82 @@ will publish message to / опубликует сообщение
 
 ***log***
 Define logging parameters / Задать параметры логирования
+
+Development using golang compiler on host machine
+=============================
+Application requires modern linux machine (tested on fedora 39+) with [Golang 1.22.0](https://go.dev/dl/) and [GNU Make](https://www.gnu.org/software/make/) installed.
+
+```shell
+
+# ensure development tools in place
+$ make tools
+
+# ensure golang modules are installed
+$ make deps
+
+# start application for development using configuration from contrib/local.yaml
+$ make start
+
+# build production grade binary at `build/stocks_broadcaster`
+$ make build
+
+```
+
+Redis can be started by docker/podman
+
+```shell
+
+# start development redis database  
+$ make docker/resource
+$ make podman/resource
+
+```
+
+Development using docker + docker compose
+=============================
+[GNU Make](https://www.gnu.org/software/make/), [Docker engine](https://docs.docker.com/engine/install/) with
+[compose plugin](https://docs.docker.com/compose/install/linux/) should be installed.
+Installing golang toolchain on host machine is not required.
+
+```shell
+
+# start development databases and build and start application on http://localhost:3001 
+$ make docker/up
+
+# start development databases  
+$ make docker/resource
+
+# stop all
+$ make docker/down
+
+# prune all development environment
+$ make docker/prune
+
+
+```
+
+
+Development using podman + podman-compose
+=============================
+Installing golang toolchain on host machine is not required.
+Tested on Fedora 39, 40 and Centos 9 Stream.
+
+```shell
+
+# install development environment
+$ sudo dnf install make podman podman-compose podman-plugins containernetworking-plugins
+
+# start development databases and build and start application on http://localhost:3001
+$ make podman/up
+
+# start development databases  
+$ make podman/resource
+
+# stop all
+$ make podman/down
+
+# prune all development environment
+$ make podman/prune
+
+```
+
