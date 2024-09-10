@@ -43,6 +43,12 @@ RestrictSUIDSGID=yes
 RemoveIPC=yes
 ProtectProc=invisible
 
+# service can to bind to network interface, so it can choose which
+# local network address to use to dial InvestAPI
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+
 # not compatible with UPX
 MemoryDenyWriteExecute=yes
 
