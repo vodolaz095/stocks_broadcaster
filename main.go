@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
+	"google.golang.org/grpc"
 
 	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
@@ -64,7 +66,27 @@ func main() {
 	// configure readers
 	var readers []reader.StocksReader
 	for i := range cfg.Inputs {
-		investApiClient, err1 := investapi.New(cfg.Inputs[i].Token)
+		var dialer *net.Dialer
+		if cfg.Inputs[i].LocalAddr != "" {
+			// make connections only from one of local network addresses
+			dialer = &net.Dialer{
+				LocalAddr: &net.TCPAddr{
+					IP: net.ParseIP(cfg.Inputs[i].LocalAddr),
+				},
+			}
+			log.Info().Msgf("Reader %s uses local address %s to dial invest API",
+				cfg.Inputs[i].Name, cfg.Inputs[i].LocalAddr)
+		} else {
+			// make kernel choose local network interface to dial
+			dialer = &net.Dialer{}
+		}
+		investApiClient, err1 := investapi.NewWithOpts(
+			cfg.Inputs[i].Token,
+			investapi.DefaultEndpoint,
+			grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "tcp", addr)
+			}),
+		)
 		if err != nil {
 			log.Fatal().
 				Err(err1).

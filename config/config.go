@@ -10,6 +10,10 @@ type Input struct {
 	Token string `yaml:"token" validate:"required"`
 	// Figis defines list of instruments' last price feeds this reader will subscribe on
 	Figis []string `yaml:"figis" validate:"required"`
+	// LocalAddr makes reader use this local ip address to dial InvestAPI - so, if your machine
+	// has few network interfaces you can use any of them with seprate Token and separate list of
+	// instruments Figis to be observed
+	LocalAddr string `yaml:"local_addr" validate:"omitempty,cidr"`
 }
 
 // Output defines redis servers configuration where we broadcast last price data from Input
@@ -32,6 +36,12 @@ type Config struct {
 	Instruments []Instrument `yaml:"instruments" validate:"required"`
 	Outputs     []Output     `yaml:"outputs" validate:"required"`
 	Log         Log          `yaml:"log" validate:"required"`
+}
+
+// Log defines logging configuration
+type Log struct {
+	Level      string `yaml:"level" validate:"required,oneof=trace debug info warn error fatal"`
+	ToJournald bool   `yaml:"to_journald"`
 }
 
 // Dump writes current runtime config
