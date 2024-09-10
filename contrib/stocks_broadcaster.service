@@ -1,0 +1,62 @@
+[Unit]
+Description=Subscibe to Tinkoff Investement API to get price feed
+After=network.target
+Requires=redis.service
+
+[Service]
+# при запуске сервиса ждём, когда оно оповестит systemd о готовности, если не оповестило, то перезапускаем
+Type=notify
+#Type=simple
+# перезапускаем при любых ошибках
+Restart=always
+# ждём 3 секунды, прежде чем systemd будет перезапускать сервис - чтобы само себя не дыдоснуло
+RestartSec=3s
+# каждые 30/2=5 секунд проверяем статус сервиса с помощью systemd-watchdog
+WatchdogSec=30s
+# если приложение не выключается, через 3 секунд посылаем SIGKILL
+TimeoutStopSec=3s
+
+User=vodolaz095
+Group=oldcityk
+
+WorkingDirectory=/etc/stocks
+ExecStart=/usr/bin/stocks_broadcaster /etc/stocks/stocks_broadcaster.yaml
+
+
+# Hardening
+# https://gist.github.com/ageis/f5595e59b1cddb1513d1b425a323db04
+
+ProtectSystem=strict
+ReadWritePaths=/var/run/redis/
+ProtectHome=yes
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+PrivateTmp=true
+#PrivateUsers=yes
+PrivateDevices=yes
+NoNewPrivileges=true
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+ProtectProc=invisible
+
+# not compatible with UPX
+MemoryDenyWriteExecute=yes
+
+IPAccounting=yes
+
+
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
