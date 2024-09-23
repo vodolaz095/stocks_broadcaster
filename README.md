@@ -1,12 +1,9 @@
 Stocks Broadcaster
 =================================
-Application subscribes to [GRPC stream](https://tinkoff.github.io/investAPI/marketdata/#marketdataserversidestream)
-with last prices and broadcasts by pub/sub channels data via redis server to trade bots.
 
-Приложение подписывается на GRPC-поток и транслирует котировки через каналы (pub/sub channels) базы данных redis для торговых ботов.
-
-Create broker account / Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
-
+Приложение подписывается на [GRPC поток](https://tinkoff.github.io/investAPI/marketdata/#marketdataserversidestream)
+котировок и ретранслирует данные через каналы (pub/sub channels) базы данных redis для торговых ботов.
+Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
 Поддержать разработчика - https://www.tinkoff.ru/rm/ostroumov.anatoliy2/4HFzm76801/
 
 Постановка задания
@@ -51,16 +48,13 @@ inputs:
 Также я хочу запускать приложение как systemd unit на Cents 9 / Fedora 40 Server.
 
 
-Config
+Конфигурация
 =================================
-Configuration example / Образец конфигурации
-[stocks_broadcaster_example.yaml](contrib%2Fstocks_broadcaster_example.yaml)
-
-Key meaning / Значение ключей конфигурации
+Образец конфигурации - [stocks_broadcaster_example.yaml](contrib%2Fstocks_broadcaster_example.yaml)
+Значение ключей конфигурации:
 
 ***input***
 
-Define inputs' parameters - trade api token, local network address (can be omitted) and FIGI of instruments to subscribe. 
 Задать параметры ввода - токен подключения к API, локальный сетевой адрес (необязательно) и FIGI инструментов, на котировки которых нужно подписаться.
 
 ```yaml
@@ -83,8 +77,7 @@ inputs:
 
 ***instruments***
 
-Define parameters to render and route last price messages via redis pub/sub channels. 
-Задаёт направление и формат сообщения котировок, которое будет посылаться в каналы редиса. 
+Задаёт название канала и формат генерации сообщения котировок, которое будет посылаться в каналы редиса. 
 
 ```yaml
 
@@ -103,11 +96,16 @@ instruments:
 
 ***outputs***
 
-Define name and connection string for redis servers to broadcast last price updates
+```yaml
+
+outputs:
+  - name: "container"
+    redis_url: "redis://127.0.0.1:6379" # syntax - https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL
+
+```
+
 Задать название и строку соединения до сервера redis, куда будут передаваться котировки.
-
-
-Message format - JSON in UTF8 encoding / формат сообщения JSON в кодировке UTF-8
+Формат сообщения JSON в кодировке UTF-8
 
 ```json5
 {
@@ -118,11 +116,9 @@ Message format - JSON in UTF8 encoding / формат сообщения JSON в
 }
 ```
 
-Message is published in channel defined in `channel` key of config. 
 Ключ конфигурации `channel` задаёт название канала, куда публикуется сообщение.
 
-
-Example / Пример:
+Пример:
 
 ```yaml
 instruments:
@@ -131,7 +127,7 @@ instruments:
     channel: "stocks/gazp"
 
 ```
-will publish message to / опубликует сообщение 
+опубликует сообщение 
 ```json5
 {
   "name": "GAZP",
@@ -144,15 +140,21 @@ will publish message to / опубликует сообщение
 
 
 ***log***
-
-Define logging parameters.
 Задать параметры логирования
 
-Development using golang compiler on host machine
+Разработка с использованием компилятора и базы данных redis на хост машине.
 =============================
-Application requires modern linux machine (tested on fedora 39+) with [Golang 1.22.0](https://go.dev/dl/) and [GNU Make](https://www.gnu.org/software/make/) installed.
+Приложение протестированно на современном линуксе (tested on fedora 39+) с 
+установленными пакетами из официальный репозиториев дистрибутива.
+[Golang 1.22.0](https://go.dev/dl/) и [GNU Make](https://www.gnu.org/software/make/).
 
 ```shell
+
+# install compiler tools
+$ dnf install golang make redis 
+
+# install redis database on host machine
+$ dnf install -y redis && systemctl enable --now redis
 
 # ensure development tools in place
 $ make tools
@@ -168,7 +170,7 @@ $ make build
 
 ```
 
-Redis can be started by docker/podman
+База данных Redis может быть запущена через docker/podman.
 
 ```shell
 
