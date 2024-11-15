@@ -38,7 +38,7 @@ start:
 	go run main.go ./contrib/local.yaml
 
 binary: build
-	./build/stocks_broadcaster contrib/stocks_broadcaster.yaml
+	./build/stocks_broadcaster contrib/local.yaml
 
 tag:
 	git tag "v$(majorVersion).$(minorVersion).$(patchVersion)"

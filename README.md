@@ -228,3 +228,77 @@ $ make podman/prune
 
 ```
 
+Как проверить работоспособность приложения?
+=============================
+
+1. Задать параметры конфигурации, допустим, в `contrib/local.yaml`
+2. Запустить базу данных и приложение каким-либо образом (`make start`, `make docker/up` и т.д.) 
+3. Подключится к серверу `redis` с помощью `redis-cli` и вызвать команду `monitor`
+4. Смотреть вывод консоли редиса - будет показаны вывозы команды `publish` от приложения на публикацию котировок в каналы.
+   В частности, если сейчас идут торги акциями "Газпрома", то сообщения будут такими:
+
+```
+
+vodolaz095@steel:~$ redis-cli monitor
+OK
+1731687168.592596 [0 127.0.0.1:39872] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.25,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:48.397151Z\"}"
+1731687168.592655 [0 127.0.0.1:39886] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.25,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:48.397151Z\"}"
+1731687169.099057 [0 127.0.0.1:39886] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.27,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:48.882235Z\"}"
+1731687169.099103 [0 127.0.0.1:39872] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.27,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:48.882235Z\"}"
+1731687170.635182 [0 127.0.0.1:39886] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.28,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:50.443741Z\"}"
+1731687170.635268 [0 127.0.0.1:39872] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.28,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:50.443741Z\"}"
+1731687170.635787 [0 127.0.0.1:39872] "publish" "stocks/NVTK" "{\"name\":\"NVTK\",\"value\":919.6,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:50.466195Z\"}"
+1731687170.635985 [0 127.0.0.1:39886] "publish" "stocks/NVTK" "{\"name\":\"NVTK\",\"value\":919.6,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:50.466195Z\"}"
+1731687171.352578 [0 127.0.0.1:39872] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.26,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:51.179342Z\"}"
+1731687171.352624 [0 127.0.0.1:39886] "publish" "stocks/gazp" "{\"name\":\"GAZP\",\"value\":133.26,\"error\":\"\",\"timestamp\":\"2024-11-15T16:12:51.179342Z\"}"
+^C
+
+```
+5. На уровне логгирования `debug` приложение будет писать примерно такой вывод:
+```
+
+vodolaz095@steel:~/projects/stocks_broadcaster$ make start 
+go run main.go ./contrib/local.yaml
+19:15:40 INF main.go:61 > Starting StockBroadcaster version development. GOOS: linux. ARCH: amd64. Go Version: go1.22.8. Please, report bugs here: https://github.com/vodolaz095/stocks_broadcaster/issues
+19:15:40 INF main.go:77 > Reader etfs uses local address 192.168.47.9 to dial invest API
+19:15:40 WRN main.go:150 > Systemd watchdog disabled - application can work unstable in systemd environment
+19:15:40 DBG service_start.go:19 > Preparing to start reader 0 InvestAPI reader etfs...
+19:15:40 DBG service_start.go:19 > Preparing to start reader 1 InvestAPI reader stocks...
+19:15:40 DBG service_subscribe.go:16 > Creating subscription channel for writer 0 container1...
+19:15:40 DBG service_subscribe.go:16 > Creating subscription channel for writer 1 container2...
+19:15:40 TRC reader.go:97 > Reader InvestAPI reader stocks received: subscribe_last_price_response:{tracking_id:"61ac060fc2703aef8e3c7b48a6c40ab9" last_price_subscriptions:{figi:"BBG004730RP0" subscription_status:SUBSCRIPTION_STATUS_SUCCESS instrument_uid:"962e2a95-02a9-4171-abd7-aa198dbe643a" stream_id:"88a48d6e-7896-47cc-99ce-d8a3aff381b0" subscription_id:"5c50ec81-79ff-4d08-aafb-971d9cc51edf"} last_price_subscriptions:{figi:"BBG00475KKY8" subscription_status:SUBSCRIPTION_STATUS_SUCCESS instrument_uid:"0da66728-6c30-44c4-9264-df8fac2467ee" stream_id:"88a48d6e-7896-47cc-99ce-d8a3aff381b0" subscription_id:"303860b0-b5a6-41b0-b5a3-35fd02a92fce"}}
+19:15:40 TRC reader.go:97 > Reader InvestAPI reader etfs received: subscribe_last_price_response:{tracking_id:"5527ca8063a72475382a677df49faf22" last_price_subscriptions:{figi:"BBG333333333" subscription_status:SUBSCRIPTION_STATUS_SUCCESS instrument_uid:"9654c2dd-6993-427e-80fa-04e80a1cf4da" stream_id:"7165bfb2-e045-47c3-aeec-23c2cbfa00c1" subscription_id:"5078900a-d949-4221-9bc3-0f2ddc9e0186"}}
+19:15:41 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG004730RP0" price:{units:133 nano:490000000} time:{seconds:1731687340 nanos:971043000} instrument_uid:"962e2a95-02a9-4171-abd7-aa198dbe643a" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:41 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG004730RP0 has last lot price 133.4900
+19:15:43 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG00475KKY8" price:{units:921 nano:800000000} time:{seconds:1731687343 nanos:433960000} instrument_uid:"0da66728-6c30-44c4-9264-df8fac2467ee" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:43 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG00475KKY8 has last lot price 921.8000
+19:15:43 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG00475KKY8" price:{units:922} time:{seconds:1731687343 nanos:611561000} instrument_uid:"0da66728-6c30-44c4-9264-df8fac2467ee" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:43 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG00475KKY8 has last lot price 922.0000
+19:15:43 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG004730RP0" price:{units:133 nano:500000000} time:{seconds:1731687343 nanos:586901000} instrument_uid:"962e2a95-02a9-4171-abd7-aa198dbe643a" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:43 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG004730RP0 has last lot price 133.5000
+19:15:44 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG00475KKY8" price:{units:921 nano:800000000} time:{seconds:1731687344 nanos:567429000} instrument_uid:"0da66728-6c30-44c4-9264-df8fac2467ee" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:44 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG00475KKY8 has last lot price 921.8000
+19:15:45 TRC reader.go:97 > Reader InvestAPI reader stocks received: last_price:{figi:"BBG00475KKY8" price:{units:922} time:{seconds:1731687345 nanos:742633000} instrument_uid:"0da66728-6c30-44c4-9264-df8fac2467ee" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:45 DBG reader.go:100 > Reader InvestAPI reader stocks: instrument BBG00475KKY8 has last lot price 922.0000
+19:15:45 TRC reader.go:97 > Reader InvestAPI reader etfs received: last_price:{figi:"BBG333333333" price:{units:5 nano:880000000} time:{seconds:1731687345 nanos:793230000} instrument_uid:"9654c2dd-6993-427e-80fa-04e80a1cf4da" last_price_type:LAST_PRICE_EXCHANGE}
+19:15:45 DBG reader.go:100 > Reader InvestAPI reader etfs: instrument BBG333333333 has last lot price 5.8800
+^C19:15:46 INF main.go:172 > Signal interrupt is received
+19:15:46 INF reader.go:72 > Reader InvestAPI reader stocks is closing grpc subscription for 2 instruments
+19:15:46 DBG reader.go:90 > Connection for InvestAPI reader stocks is canceled
+19:15:46 DBG service_subscribe.go:24 > Closing subscription channel for writer 1 container2...
+19:15:46 DBG service_start.go:91 > Closing broadcasting...
+19:15:46 DBG service_subscribe.go:27 > Subscription channel for writer 1 container2 is closed
+19:15:46 DBG reader.go:90 > Connection for InvestAPI reader etfs is canceled
+19:15:46 DBG service_subscribe.go:24 > Closing subscription channel for writer 0 container1...
+19:15:46 DBG service_subscribe.go:27 > Subscription channel for writer 0 container1 is closed
+19:15:46 DBG service_start.go:34 > 2 readers are closing
+19:15:46 INF reader.go:72 > Reader InvestAPI reader etfs is closing grpc subscription for 1 instruments
+19:15:46 DBG service_close.go:18 > close: reader InvestAPI reader etfs is terminated
+19:15:46 DBG service_close.go:18 > close: reader InvestAPI reader stocks is terminated
+19:15:46 DBG service_close.go:28 > close: writer container1 is terminated
+19:15:46 DBG service_close.go:28 > close: writer container2 is terminated
+19:15:46 INF service_close.go:30 > close: system is stopped
+19:15:46 INF main.go:196 > Stocks Broadcaster is terminated.
+make: *** [Makefile:38: start] Ошибка 1
+
+```
