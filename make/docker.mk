@@ -6,7 +6,7 @@ docker/up:
 	docker ps
 
 docker/resource:
-	podman up -d redis
+	docker compose up -d redis
 
 docker/down:
 	docker compose down
