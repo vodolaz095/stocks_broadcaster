@@ -4,19 +4,19 @@ import (
 	"context"
 	"flag"
 	"net"
-	"os"
-	"os/signal"
 	"runtime"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
+	"github.com/vodolaz095/pkg/stopper"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
+	"github.com/vodolaz095/pkg/healthcheck"
+	"github.com/vodolaz095/pkg/zerologger"
 	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
@@ -24,17 +24,13 @@ import (
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
 	redisWriter "github.com/vodolaz095/stocks_broadcaster/internal/transport/writer/redis"
 	"github.com/vodolaz095/stocks_broadcaster/model"
-	"github.com/vodolaz095/stocks_broadcaster/pkg/healthcheck"
-	"github.com/vodolaz095/stocks_broadcaster/pkg/zerologger"
 )
 
 var Version = "development"
 
 func main() {
 	var err error
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	ctx, cancel := context.WithCancel(context.Background())
+	mainCtx, cancel := stopper.New()
 	defer cancel()
 	flag.Parse()
 
@@ -74,8 +70,8 @@ func main() {
 					IP: net.ParseIP(cfg.Inputs[i].LocalAddr),
 				},
 			}
-			log.Info().Msgf("Reader %s uses local address %s to dial invest API",
-				cfg.Inputs[i].Name, cfg.Inputs[i].LocalAddr)
+			log.Info().Msgf("Reader %v %s uses local address %s to dial invest API",
+				i, cfg.Inputs[i].Name, cfg.Inputs[i].LocalAddr)
 		} else {
 			// make kernel choose local network interface to dial
 			dialer = &net.Dialer{}
@@ -98,6 +94,7 @@ func main() {
 			ReadInterval: investapi_reader.DefaultReadInterval,
 			Instruments:  cfg.Inputs[i].Figis,
 		})
+		log.Info().Msgf("Reader %v-%s for %v instruments is prepared", i, cfg.Inputs[i].Name, len(cfg.Inputs[i].Figis))
 	}
 
 	// configure writers
@@ -112,6 +109,7 @@ func main() {
 			Description: cfg.Outputs[i].Name,
 			Client:      redis.NewClient(redisOpts),
 		})
+		log.Info().Msgf("Writer %v-%s is prepared", i, cfg.Outputs[i].Name)
 	}
 
 	// configure service
@@ -127,29 +125,28 @@ func main() {
 		srv.FigiName[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Name
 		srv.FigiChannel[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Channel
 	}
-
 	// set systemd watchdog
 	systemdWatchdogEnabled, err := healthcheck.Ready()
 	if err != nil {
 		log.Error().Err(err).
 			Msgf("%s: while notifying systemd on application ready", err)
 	}
-	if systemdWatchdogEnabled {
-		go func() {
-			log.Debug().Msgf("Watchdog enabled")
-			errWD := healthcheck.StartWatchDog(ctx, []healthcheck.Pinger{
-				&srv,
-			})
-			if errWD != nil {
-				log.Error().
-					Err(err).
-					Msgf("%s : while starting watchdog", err)
-			}
-		}()
-	} else {
-		log.Warn().Msgf("Systemd watchdog disabled - application can work unstable in systemd environment")
-	}
-
+	log.Info().Msgf("Starting service with %v readers and %v writers", len(srv.Readers), len(srv.Writers))
+	eg, ctx := errgroup.WithContext(mainCtx)
+	eg.Go(func() error {
+		if !systemdWatchdogEnabled {
+			log.Warn().Msgf("Systemd watchdog disabled - application can work unstable in systemd environment")
+			return nil
+		}
+		log.Debug().Msgf("Watchdog enabled")
+		return healthcheck.StartWatchDog(ctx, []healthcheck.Pinger{&srv})
+	})
+	eg.Go(func() error {
+		return srv.StartWriters(ctx)
+	})
+	eg.Go(func() error {
+		return srv.StartReaders(ctx)
+	})
 	// change systemd status
 	if systemdWatchdogEnabled {
 		// https://www.freedesktop.org/software/systemd/man/latest/sd_notify.html#STATUS=%E2%80%A6
@@ -158,34 +155,11 @@ func main() {
 			log.Warn().Err(err).Msgf("Error setting systemd unit status")
 		}
 	}
-
-	// handle signals
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-		syscall.SIGABRT,
-	)
-	go func() {
-		s := <-sigc
-		log.Info().Msgf("Signal %s is received", s.String())
-		wg.Done()
-		cancel()
-	}()
-
+	err = eg.Wait()
+	if err != nil {
+		log.Error().Err(err).Msgf("Error starting system: %s", err)
+	}
 	// main loop
-	err = srv.StartWriters(ctx)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Error starting writers: %s", err)
-	}
-	err = srv.Start(ctx)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Error starting system: %s", err)
-	}
-
-	// closing
-	wg.Wait()
 	terminationContext, terminationContextCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer terminationContextCancel()
 	err = srv.Close(terminationContext)

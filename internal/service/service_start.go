@@ -72,7 +72,7 @@ func (b *Broadcaster) StartWriters(ctx context.Context) (err error) {
 	return err
 }
 
-func (b *Broadcaster) Start(ctx context.Context) (err error) {
+func (b *Broadcaster) StartReaders(ctx context.Context) (err error) {
 	if len(b.Writers) == 0 {
 		return NoWritersError
 	}

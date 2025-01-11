@@ -1,6 +1,9 @@
 package config
 
-import "gopkg.in/yaml.v3"
+import (
+	"github.com/vodolaz095/pkg/zerologger"
+	"gopkg.in/yaml.v3"
+)
 
 // Input defines reader's configuration which helps it to obtain last price data
 type Input struct {
@@ -32,16 +35,10 @@ type Instrument struct {
 
 // Config defines structure we expect in configuration file of application
 type Config struct {
-	Inputs      []Input      `yaml:"inputs" validate:"required"`
-	Instruments []Instrument `yaml:"instruments" validate:"required"`
-	Outputs     []Output     `yaml:"outputs" validate:"required"`
-	Log         Log          `yaml:"log" validate:"required"`
-}
-
-// Log defines logging configuration
-type Log struct {
-	Level      string `yaml:"level" validate:"required,oneof=trace debug info warn error fatal"`
-	ToJournald bool   `yaml:"to_journald"`
+	Inputs      []Input        `yaml:"inputs" validate:"required"`
+	Instruments []Instrument   `yaml:"instruments" validate:"required"`
+	Outputs     []Output       `yaml:"outputs" validate:"required"`
+	Log         zerologger.Log `yaml:"log" validate:"required"`
 }
 
 // Dump writes current runtime config
