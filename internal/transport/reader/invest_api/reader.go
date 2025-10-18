@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
 	"google.golang.org/grpc/codes"
@@ -17,11 +18,13 @@ import (
 const DefaultReadInterval = 10 * time.Millisecond
 
 type Reader struct {
-	Description  string
-	Connection   *investapi.Client
-	ReadInterval time.Duration
-	Token        string
-	Instruments  []string
+	Description      string
+	Connection       *investapi.Client
+	ReadInterval     time.Duration
+	Token            string
+	Instruments      []string
+	MetricsSet       *metrics.Set
+	oneMinuteCounter *metrics.Counter
 }
 
 func (r *Reader) Name() string {
@@ -46,9 +49,19 @@ func (r *Reader) Close(_ context.Context) (err error) {
 func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err error) {
 	var upd model.Update
 	var instruments []*investapi.LastPriceInstrument
+	r.oneMinuteCounter = r.MetricsSet.GetOrCreateCounter(fmt.Sprintf("deals{reader=%q}", r.Description))
+
 	for i := range r.Instruments {
 		instruments = append(instruments, &investapi.LastPriceInstrument{Figi: r.Instruments[i]})
 	}
+	resetCounterTicker := time.NewTicker(time.Minute)
+	go func() {
+		for range resetCounterTicker.C {
+			r.oneMinuteCounter.Set(0)
+			log.Debug().Msgf("Pruning one minute counter for %s", r.Name())
+		}
+	}()
+
 	//  подписываемся на цену крайней сделки по акциям
 	request := investapi.MarketDataServerSideStreamRequest{
 		SubscribeCandlesRequest:   nil,
@@ -69,6 +82,7 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 	var lastPrice *investapi.LastPrice
 	go func() {
 		<-ctx.Done()
+		resetCounterTicker.Stop()
 		log.Info().Msgf("Reader %s is closing grpc subscription for %v instruments",
 			r.Name(), len(r.Instruments))
 		// https://github.com/grpc/grpc-go/issues/3230#issuecomment-562061037
@@ -106,6 +120,7 @@ func (r *Reader) Start(ctx context.Context, updateFeed chan model.Update) (err e
 				Timestamp: lastPrice.Time.AsTime(),
 			}
 			updateFeed <- upd
+			r.oneMinuteCounter.Add(1)
 		}
 		if msg.GetPing() != nil {
 			log.Debug().Msgf("Reader %s: connection is alive", r.Name())

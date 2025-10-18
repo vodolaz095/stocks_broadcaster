@@ -25,6 +25,11 @@ outputs:
   - name: "container"
     redis_url: "redis://127.0.0.1:6379" # syntax - https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL
 
+webserver:
+  enabled: true
+  network: tcp
+  listen: "127.0.0.1:3000"
+
 log:
   level: trace # can be `trace`,`debug`,`info`,`warn`,`error` - info is usual.
   to_journald: false

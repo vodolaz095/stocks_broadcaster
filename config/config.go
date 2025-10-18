@@ -43,9 +43,11 @@ type Config struct {
 }
 
 type Webserver struct {
-	Network string `yaml:"network" validate:"required,oneof=tcp tcp4 tcp6 unix"`
-	Listen  string `yaml:"listen" validate:"hostname_port"`
-	Socket  string `yaml:"socket"`
+	Enabled              bool   `yaml:"enabled"`
+	ExposeRuntimeMetrics bool   `yaml:"expose_runtime_metrics"`
+	Network              string `yaml:"network" validate:"oneof=tcp tcp4 tcp6 unix"`
+	Listen               string `yaml:"listen" validate:"hostname_port"`
+	Socket               string `yaml:"socket"`
 }
 
 // Dump writes current runtime config

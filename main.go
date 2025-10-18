@@ -62,6 +62,8 @@ func main() {
 		"https://github.com/vodolaz095/stocks_broadcaster/issues",
 	)
 
+	metricsSet := metrics.NewSet()
+
 	// configure readers
 	var readers []reader.StocksReader
 	for i := range cfg.Inputs {
@@ -92,6 +94,7 @@ func main() {
 				Msgf("error connecting invest api: %s", err1)
 		}
 		readers = append(readers, &investapi_reader.Reader{
+			MetricsSet:   metricsSet,
 			Description:  cfg.Inputs[i].Name,
 			Connection:   investApiClient,
 			ReadInterval: investapi_reader.DefaultReadInterval,
@@ -117,7 +120,7 @@ func main() {
 
 	// configure service
 	srv := service.Broadcaster{
-		MetricsSet:       metrics.NewSet(),
+		MetricsSet:       metricsSet,
 		FigiName:         make(map[string]string, 0),
 		FigiChannel:      make(map[string]string, 0),
 		Cord:             make(chan model.Update, service.DefaultChannelBuffer),
@@ -163,11 +166,16 @@ func main() {
 		}
 	}
 	eg.Go(func() error {
+		if !cfg.Webserver.Enabled {
+			log.Debug().Msgf("Webserver is not enabled")
+			return nil
+		}
 		ws := webserver.WebServer{
-			Service: &srv,
-			Network: cfg.Webserver.Network,
-			Listen:  cfg.Webserver.Listen,
-			Socket:  cfg.Webserver.Socket,
+			Service:              &srv,
+			ExposeRuntimeMetrics: cfg.Webserver.ExposeRuntimeMetrics,
+			Network:              cfg.Webserver.Network,
+			Listen:               cfg.Webserver.Listen,
+			Socket:               cfg.Webserver.Socket,
 		}
 		return ws.Start(ctx)
 	})

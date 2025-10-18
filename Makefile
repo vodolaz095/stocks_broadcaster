@@ -32,7 +32,7 @@ test:
 run: start
 
 build: deps
-	CGO_ENABLED=0 go build -ldflags "-X main.Version=$(ver)" -o build/stocks_broadcaster main.go
+	CGO_ENABLED=0 go build -ldflags "-s -w -X main.Version=$(ver)" -o build/stocks_broadcaster main.go
 
 start:
 	go run main.go ./contrib/local.yaml
