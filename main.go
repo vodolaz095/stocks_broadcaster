@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"runtime"
 	"time"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -19,6 +21,7 @@ import (
 	"github.com/vodolaz095/pkg/zerologger"
 	"github.com/vodolaz095/stocks_broadcaster/config"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
+	webserver "github.com/vodolaz095/stocks_broadcaster/internal/transport/http"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
 	investapi_reader "github.com/vodolaz095/stocks_broadcaster/internal/transport/reader/invest_api"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
@@ -114,16 +117,20 @@ func main() {
 
 	// configure service
 	srv := service.Broadcaster{
-		FigiName:    make(map[string]string, 0),
-		FigiChannel: make(map[string]string, 0),
-		Cord:        make(chan model.Update, service.DefaultChannelBuffer),
-		Readers:     readers,
-		Writers:     writers,
+		MetricsSet:       metrics.NewSet(),
+		FigiName:         make(map[string]string, 0),
+		FigiChannel:      make(map[string]string, 0),
+		Cord:             make(chan model.Update, service.DefaultChannelBuffer),
+		Readers:          readers,
+		Writers:          writers,
+		InstrumentGauges: make(map[string]string, 0),
 	}
 	// configure service routing
 	for i := range cfg.Instruments {
 		srv.FigiName[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Name
 		srv.FigiChannel[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Channel
+		srv.InstrumentGauges[cfg.Instruments[i].FIGI] = fmt.Sprintf("%s{figi=%q}",
+			cfg.Instruments[i].Name, cfg.Instruments[i].FIGI)
 	}
 	// set systemd watchdog
 	systemdWatchdogEnabled, err := healthcheck.Ready()
@@ -155,6 +162,16 @@ func main() {
 			log.Warn().Err(err).Msgf("Error setting systemd unit status")
 		}
 	}
+	eg.Go(func() error {
+		ws := webserver.WebServer{
+			Service: &srv,
+			Network: cfg.Webserver.Network,
+			Listen:  cfg.Webserver.Listen,
+			Socket:  cfg.Webserver.Socket,
+		}
+		return ws.Start(ctx)
+	})
+
 	err = eg.Wait()
 	if err != nil {
 		log.Error().Err(err).Msgf("Error starting system: %s", err)

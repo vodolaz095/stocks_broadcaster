@@ -39,6 +39,13 @@ type Config struct {
 	Instruments []Instrument   `yaml:"instruments" validate:"required"`
 	Outputs     []Output       `yaml:"outputs" validate:"required"`
 	Log         zerologger.Log `yaml:"log" validate:"required"`
+	Webserver   Webserver      `yaml:"webserver" validate:"required"`
+}
+
+type Webserver struct {
+	Network string `yaml:"network" validate:"required,oneof=tcp tcp4 tcp6 unix"`
+	Listen  string `yaml:"listen" validate:"hostname_port"`
+	Socket  string `yaml:"socket"`
 }
 
 // Dump writes current runtime config

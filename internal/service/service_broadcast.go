@@ -9,5 +9,9 @@ func (b *Broadcaster) Broadcast(upd model.Update) (subscribersNotified int) {
 		subscribersNotified += 1
 		b.subscribers[k] <- upd
 	}
+	name, found := b.InstrumentGauges[upd.Name]
+	if found {
+		b.MetricsSet.GetOrCreateGauge(name, nil).Set(upd.Value)
+	}
 	return subscribersNotified
 }
