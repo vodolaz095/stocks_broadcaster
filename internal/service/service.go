@@ -16,7 +16,7 @@ type Broadcaster struct {
 	Readers []reader.StocksReader
 	Writers []writer.StocksWriter
 
-	// subscribers are used updates to different transports - redis publishers,
+	// subscribers are used to send updates to different transports - redis publishers,
 	// influx, etc...
 	subscribers map[string]chan model.Update
 }

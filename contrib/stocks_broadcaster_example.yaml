@@ -12,7 +12,7 @@ inputs:
 
 instruments:
   - figi: "BBG333333333"
-    name: "tmos"
+    name: "TMOS"
     channel: "stocks/tmos"
   - figi: "BBG004730RP0"
     name: "GAZP"
