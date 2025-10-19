@@ -6,7 +6,7 @@ docker/up:
 	docker ps
 
 docker/resource:
-	docker compose up -d redis
+	docker compose up -d redis victoria
 
 docker/down:
 	docker compose down

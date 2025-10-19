@@ -4,7 +4,7 @@ Stocks Broadcaster
 Приложение подписывается на [GRPC поток](https://tinkoff.github.io/investAPI/marketdata/#marketdataserversidestream)
 котировок и ретранслирует данные через каналы (pub/sub channels) базы данных redis для торговых ботов.
 Открыть брокерский счёт в [T-Bank Open Investment API](https://www.tbank.ru/sl/AugaFvDlqEP)
-Поддержать разработчика - https://www.tinkoff.ru/rm/ostroumov.anatoliy2/4HFzm76801/
+Поддержать разработчика - https://www.tbank.ru/rm/ostroumov.anatoliy2/4HFzm76801/
 
 Постановка задания
 ================================
@@ -12,7 +12,7 @@ Stocks Broadcaster
 
 На данный момент (10 сентября 2024 года) брокер Т-Инвестиций предоставляет доступ к торгам
 9383 типов акций, 4745 облигаций, 2125 фондов, 38 валют и 1552 фьючерсов и на котировки этих инструментов
-можно подписаться. Open Investement API обладает жёсткими [лимитами](https://russianinvestments.github.io/investAPI/limits/) - 
+можно подписаться. Open Investment API обладает жёсткими [лимитами](https://russianinvestments.github.io/investAPI/limits/) - 
 300 подписок на котировки с одного ключа (и, похоже, с одного IP адреса).
 
 Как разработчик торговых ботов, я хочу получать котировки акций (цена крайней сделки) через каналы базы данных
@@ -46,6 +46,12 @@ inputs:
 хотя и вносит лаг около 20 мс - что, в принципе, терпимо для алготрейдинга.
 
 Также я хочу запускать приложение как systemd unit на Cents 9 / Fedora 40 Server.
+
+В версии v1.1.0 добавлен HTTP сервер с эндпоинтами для проверки готовности и жизнеспособности 
+сервиса платформой [Kubernets](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/),
+а также эндпоинт `GET /metrics`, выдающий метрики процесса (и значения котировок) в формате [Prometheus Metrics Scapper](https://prometheus.io/docs/prometheus/latest/getting_started/#configure-prometheus-to-monitor-the-sample-targets)
+
+В версии v1.2.0 в конфиг добавлен массив баз данных Victoria Metrics, куда можно отправлять котировки и метрики процесса.
 
 
 Конфигурация

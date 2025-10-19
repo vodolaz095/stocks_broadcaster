@@ -24,6 +24,7 @@ import (
 	webserver "github.com/vodolaz095/stocks_broadcaster/internal/transport/http"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
 	investapi_reader "github.com/vodolaz095/stocks_broadcaster/internal/transport/reader/invest_api"
+	"github.com/vodolaz095/stocks_broadcaster/internal/transport/victoria_metrics"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
 	redisWriter "github.com/vodolaz095/stocks_broadcaster/internal/transport/writer/redis"
 	"github.com/vodolaz095/stocks_broadcaster/model"
@@ -180,11 +181,31 @@ func main() {
 		return ws.Start(ctx)
 	})
 
+	// push metrics to victoria metrics
+	for i := range cfg.VictoriaMetricsDatabases {
+		vm := victoria_metrics.Writer{
+			Endpoint: cfg.VictoriaMetricsDatabases[i].Endpoint,
+			Headers:  cfg.VictoriaMetricsDatabases[i].Headers,
+			Labels:   cfg.VictoriaMetricsDatabases[i].Labels,
+			Interval: cfg.VictoriaMetricsDatabases[i].Interval,
+		}
+		eg.Go(func() error {
+			return vm.Start(ctx, srv.MetricsSet)
+		})
+		if cfg.VictoriaMetricsDatabases[i].ExposeRuntimeMetrics {
+			eg.Go(func() error {
+				return vm.StartSendingRuntimeMetrics(ctx)
+			})
+		}
+	}
+
+	// main loop
 	err = eg.Wait()
 	if err != nil {
 		log.Error().Err(err).Msgf("Error starting system: %s", err)
 	}
-	// main loop
+
+	// termination
 	terminationContext, terminationContextCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer terminationContextCancel()
 	err = srv.Close(terminationContext)

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/vodolaz095/pkg/zerologger"
 	"gopkg.in/yaml.v3"
 )
@@ -33,21 +35,31 @@ type Instrument struct {
 	Channel string `yaml:"channel" validate:"required"`
 }
 
-// Config defines structure we expect in configuration file of application
-type Config struct {
-	Inputs      []Input        `yaml:"inputs" validate:"required"`
-	Instruments []Instrument   `yaml:"instruments" validate:"required"`
-	Outputs     []Output       `yaml:"outputs" validate:"required"`
-	Log         zerologger.Log `yaml:"log" validate:"required"`
-	Webserver   Webserver      `yaml:"webserver" validate:"required"`
-}
-
+// Webserver defines structure we expect in configuration file of application
 type Webserver struct {
 	Enabled              bool   `yaml:"enabled"`
 	ExposeRuntimeMetrics bool   `yaml:"expose_runtime_metrics"`
 	Network              string `yaml:"network" validate:"oneof=tcp tcp4 tcp6 unix"`
 	Listen               string `yaml:"listen" validate:"hostname_port"`
 	Socket               string `yaml:"socket"`
+}
+
+type VictoriaMetricDatabase struct {
+	Endpoint             string            `yaml:"endpoint" validate:"required,http_url"`
+	Headers              map[string]string `yaml:"headers"`
+	Interval             time.Duration     `yaml:"interval"`
+	Labels               string            `yaml:"labels"`
+	ExposeRuntimeMetrics bool              `yaml:"expose_runtime_metrics"`
+}
+
+// Config defines structure we expect in configuration file of application
+type Config struct {
+	Inputs                   []Input                  `yaml:"inputs" validate:"required"`
+	Instruments              []Instrument             `yaml:"instruments" validate:"required"`
+	Outputs                  []Output                 `yaml:"outputs" validate:"required"`
+	Log                      zerologger.Log           `yaml:"log" validate:"required"`
+	Webserver                Webserver                `yaml:"webserver" validate:"required"`
+	VictoriaMetricsDatabases []VictoriaMetricDatabase `yaml:"victoria_metrics_databases"`
 }
 
 // Dump writes current runtime config

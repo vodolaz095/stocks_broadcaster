@@ -1,3 +1,4 @@
+# define tbank tokens and figis to observe here
 inputs:
   - name: "subscriber1"
     token: "secret1" # https://tinkoff.github.io/investAPI/grpc/#tinkoff-invest-api_1
@@ -10,6 +11,7 @@ inputs:
       - "BBG004730RP0"
       - "BBG00475KKY8"
 
+# define routing table, where to publish last deal price depending on figi
 instruments:
   - figi: "BBG333333333"
     name: "TMOS"
@@ -21,15 +23,27 @@ instruments:
     name: "NVTK"
     channel: "stocks/NVTK"
 
+# broadcast last deal prices via redis containers
 outputs:
   - name: "container"
     redis_url: "redis://127.0.0.1:6379" # syntax - https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL
 
+# push data to few victoria metrics
+victoria_metrics_databases:
+  - endpoint: "http://localhost:8428/api/v1/import/prometheus"
+    headers:
+      Authorization: Basic dGVzdDp0ZXN0Cg==
+    interval: 10s
+    labels: "hostname=\"broadcaster.local\""
+    expose_runtime_metrics: true
+
+# start webserver with ready and healthz endpoints for kuber and /metrics endpoint for scrapping data by prometheus
 webserver:
   enabled: true
   network: tcp
   listen: "127.0.0.1:3000"
 
+# log verbosity and enable streaming them into journald socket
 log:
   level: trace # can be `trace`,`debug`,`info`,`warn`,`error` - info is usual.
   to_journald: false

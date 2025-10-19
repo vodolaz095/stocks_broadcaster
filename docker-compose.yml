@@ -2,6 +2,7 @@ version: "3.8"
 
 volumes:
   redis_data:
+  victoria:
 
 services:
   # https://hub.docker.com/_/redis
@@ -11,6 +12,13 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
+  victoria:
+    image: mirror.gcr.io/victoriametrics/victoria-metrics:v1.127.0-scratch
+    ports:
+      - "8428:8428"
+    volumes:
+      - victoria:/victoria-metrics-data
 
   broadcaster:
     build:

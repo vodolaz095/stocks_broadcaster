@@ -3,7 +3,7 @@ podman/up:
 	podman ps
 
 podman/resource:
-	podman-compose up -d redis
+	podman-compose up -d redis victoria
 
 podman/down:
 	podman-compose down
