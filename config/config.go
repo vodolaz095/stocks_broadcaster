@@ -47,7 +47,7 @@ type Webserver struct {
 type VictoriaMetricDatabase struct {
 	Endpoint             string            `yaml:"endpoint" validate:"required,http_url"`
 	Headers              map[string]string `yaml:"headers"`
-	Interval             time.Duration     `yaml:"interval"`
+	Interval             time.Duration     `yaml:"interval" validate:"required"`
 	Labels               string            `yaml:"labels"`
 	ExposeRuntimeMetrics bool              `yaml:"expose_runtime_metrics"`
 }
@@ -58,8 +58,9 @@ type Config struct {
 	Instruments              []Instrument             `yaml:"instruments" validate:"required"`
 	Outputs                  []Output                 `yaml:"outputs" validate:"required"`
 	Log                      zerologger.Log           `yaml:"log" validate:"required"`
-	Webserver                Webserver                `yaml:"webserver" validate:"required"`
+	Webserver                Webserver                `yaml:"webserver"`
 	VictoriaMetricsDatabases []VictoriaMetricDatabase `yaml:"victoria_metrics_databases"`
+	InsecureVM               bool                     `yaml:"insecure_vm"`
 }
 
 // Dump writes current runtime config

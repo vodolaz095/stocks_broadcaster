@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"runtime"
 	"time"
 
@@ -180,6 +182,13 @@ func main() {
 		}
 		return ws.Start(ctx)
 	})
+
+	if cfg.InsecureVM {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		log.Warn().Msg("TLS Certificate validation for Victoria Metrics endpoints is disabled!")
+	}
 
 	// push metrics to victoria metrics
 	for i := range cfg.VictoriaMetricsDatabases {

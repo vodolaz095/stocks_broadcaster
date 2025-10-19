@@ -28,6 +28,9 @@ outputs:
   - name: "container"
     redis_url: "redis://127.0.0.1:6379" # syntax - https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL
 
+# do not validate tls certificate for victoria metrics endpoints
+insecure_vm: false
+
 # push data to few victoria metrics
 victoria_metrics_databases:
   - endpoint: "http://localhost:8428/api/v1/import/prometheus"
