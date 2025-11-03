@@ -199,10 +199,12 @@ func main() {
 			Interval: cfg.VictoriaMetricsDatabases[i].Interval,
 		}
 		eg.Go(func() error {
+			log.Debug().Msgf("Sending metrics to %s with interval %s.", vm.Endpoint, vm.Interval.String())
 			return vm.Start(ctx, srv.MetricsSet)
 		})
 		if cfg.VictoriaMetricsDatabases[i].ExposeRuntimeMetrics {
 			eg.Go(func() error {
+				log.Debug().Msgf("Sending runtime metrics to %s with interval %s.", vm.Endpoint, vm.Interval.String())
 				return vm.StartSendingRuntimeMetrics(ctx)
 			})
 		}
