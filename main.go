@@ -135,8 +135,8 @@ func main() {
 	for i := range cfg.Instruments {
 		srv.FigiName[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Name
 		srv.FigiChannel[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Channel
-		srv.InstrumentGauges[cfg.Instruments[i].FIGI] = fmt.Sprintf("%s{figi=%q}",
-			cfg.Instruments[i].Name, cfg.Instruments[i].FIGI)
+		srv.InstrumentGauges[cfg.Instruments[i].FIGI] = fmt.Sprintf("%s{figi=%q, ticker=%q}",
+			cfg.Instruments[i].Name, cfg.Instruments[i].FIGI, cfg.Instruments[i].Name)
 	}
 	// set systemd watchdog
 	systemdWatchdogEnabled, err := healthcheck.Ready()
