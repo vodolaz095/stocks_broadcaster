@@ -15,13 +15,14 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/vodolaz095/go-investAPI/investapi"
+	"github.com/vodolaz095/pkg/healthcheck"
 	"github.com/vodolaz095/pkg/stopper"
+	"github.com/vodolaz095/pkg/zerologger"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	"github.com/vodolaz095/pkg/healthcheck"
-	"github.com/vodolaz095/pkg/zerologger"
 	"github.com/vodolaz095/stocks_broadcaster/config"
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 	"github.com/vodolaz095/stocks_broadcaster/internal/service"
 	webserver "github.com/vodolaz095/stocks_broadcaster/internal/transport/http"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
@@ -29,7 +30,6 @@ import (
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/victoria_metrics"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
 	redisWriter "github.com/vodolaz095/stocks_broadcaster/internal/transport/writer/redis"
-	"github.com/vodolaz095/stocks_broadcaster/model"
 )
 
 var Version = "development"
@@ -67,6 +67,9 @@ func main() {
 
 	metricsSet := metrics.NewSet()
 
+	instrumentCache := make(map[string]model.Instrument)
+	var found bool
+
 	// configure readers
 	var readers []reader.StocksReader
 	for i := range cfg.Inputs {
@@ -91,18 +94,34 @@ func main() {
 				return dialer.DialContext(ctx, "tcp", addr)
 			}),
 		)
-		if err != nil {
+		if err1 != nil {
 			log.Fatal().
 				Err(err1).
-				Msgf("error connecting invest api: %s", err1)
+				Msgf("error connecting invest api for input %v: %s", i, err1)
 		}
-		readers = append(readers, &investapi_reader.Reader{
+		oneOfReaders := &investapi_reader.Reader{
 			MetricsSet:   metricsSet,
 			Description:  cfg.Inputs[i].Name,
 			Connection:   investApiClient,
 			ReadInterval: investapi_reader.DefaultReadInterval,
 			Instruments:  cfg.Inputs[i].Figis,
-		})
+		}
+		instruments, err1 := oneOfReaders.LoadInstruments(mainCtx, cfg.Inputs[i].Figis)
+		if err1 != nil {
+			log.Fatal().
+				Err(err1).
+				Msgf("error loading instruments for input %v: %s", i, err1)
+		}
+		log.Info().Msgf("Reader %v-%s for %v instruments loaded %v instruments for cache",
+			i, cfg.Inputs[i].Name, len(cfg.Inputs[i].Figis), len(instruments))
+
+		for j := range instruments {
+			_, found = instrumentCache[instruments[j].FIGI]
+			if !found {
+				instrumentCache[instruments[j].FIGI] = instruments[j]
+			}
+		}
+		readers = append(readers, oneOfReaders)
 		log.Info().Msgf("Reader %v-%s for %v instruments is prepared", i, cfg.Inputs[i].Name, len(cfg.Inputs[i].Figis))
 	}
 
@@ -130,14 +149,30 @@ func main() {
 		Readers:          readers,
 		Writers:          writers,
 		InstrumentGauges: make(map[string]string, 0),
+		InstrumentCache:  instrumentCache,
 	}
 	// configure service routing
 	for i := range cfg.Instruments {
 		srv.FigiName[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Name
 		srv.FigiChannel[cfg.Instruments[i].FIGI] = cfg.Instruments[i].Channel
-		srv.InstrumentGauges[cfg.Instruments[i].FIGI] = fmt.Sprintf("%s{figi=%q}",
-			cfg.Instruments[i].Name, cfg.Instruments[i].FIGI)
 	}
+	// configure gauges
+	for k := range instrumentCache {
+		srv.InstrumentGauges[k] = fmt.Sprintf("stocks_last_deal{figi=%q,ticker=%q,name=%q,instrument_type=%q,lot=\"%v\"}",
+			instrumentCache[k].FIGI,
+			instrumentCache[k].Ticker,
+			instrumentCache[k].Name,
+			instrumentCache[k].InstrumentType,
+			instrumentCache[k].Lot,
+		)
+		srv.InstrumentGauges["lot_"+k] = fmt.Sprintf("stocks_lot_price{figi=%q,ticker=%q,name=%q,instrument_type=%q}",
+			instrumentCache[k].FIGI,
+			instrumentCache[k].Ticker,
+			instrumentCache[k].Name,
+			instrumentCache[k].InstrumentType,
+		)
+	}
+
 	// set systemd watchdog
 	systemdWatchdogEnabled, err := healthcheck.Ready()
 	if err != nil {

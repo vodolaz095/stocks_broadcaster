@@ -186,6 +186,16 @@ $ make podman/resource
 
 ```
 
+
+**Примеры рядов в Victoria metrics**
+
+```
+stocks_last_deal{figi="BBG004730RP0",hostname="steel.local",instrument_type="share",lot="10",name="Газпром",ticker="GAZP"}
+stocks_lot_price{figi="BBG004730RP0",hostname="steel.local",instrument_type="share",name="Газпром",ticker="GAZP"}
+```
+
+
+
 Development using docker + docker compose
 =============================
 [GNU Make](https://www.gnu.org/software/make/), [Docker engine](https://docs.docker.com/engine/install/) with

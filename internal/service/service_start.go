@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog/log"
-	"github.com/vodolaz095/stocks_broadcaster/model"
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 )
 
 func (b *Broadcaster) startReaders(ctx context.Context) (err error) {
