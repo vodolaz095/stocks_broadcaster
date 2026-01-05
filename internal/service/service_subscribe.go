@@ -5,7 +5,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/vodolaz095/stocks_broadcaster/model"
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 )
 
 func (b *Broadcaster) Subscribe(ctx context.Context, name string) (chan model.Update, error) {

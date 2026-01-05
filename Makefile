@@ -1,5 +1,5 @@
 export majorVersion=1
-export minorVersion=2
+export minorVersion=3
 
 export gittip=$(shell git log --format='%h' -n 1)
 export patchVersion=$(shell git log --format='%h' | wc -l)

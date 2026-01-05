@@ -32,6 +32,9 @@ outputs:
 insecure_vm: false
 
 # push data to few victoria metrics
+# two timeseries are produced
+# stocks_last_deal{figi="BBG004730RP0",hostname="steel.local",instrument_type="share",lot="10",name="Газпром",ticker="GAZP"}
+# stocks_lot_price {figi="BBG004730RP0",hostname="steel.local",instrument_type="share",name="Газпром",ticker="GAZP"}
 victoria_metrics_databases:
   - endpoint: "http://localhost:8428/api/v1/import/prometheus"
     headers:

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/vodolaz095/stocks_broadcaster/model"
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 )
 
 const DefaultReadInterval = 10 * time.Millisecond

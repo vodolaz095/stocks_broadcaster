@@ -1,9 +1,9 @@
 package service
 
 import (
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/reader"
 	"github.com/vodolaz095/stocks_broadcaster/internal/transport/writer"
-	"github.com/vodolaz095/stocks_broadcaster/model"
 
 	"github.com/VictoriaMetrics/metrics"
 )
@@ -14,6 +14,7 @@ type Broadcaster struct {
 	FigiName         map[string]string
 	FigiChannel      map[string]string
 	InstrumentGauges map[string]string
+	InstrumentCache  map[string]model.Instrument
 
 	Cord       chan model.Update
 	Readers    []reader.StocksReader

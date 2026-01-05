@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/vodolaz095/stocks_broadcaster/model"
+	"github.com/vodolaz095/stocks_broadcaster/internal/model"
 )
 
 type Writer struct {
