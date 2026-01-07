@@ -2,11 +2,13 @@
 inputs:
   - name: "subscriber1"
     token: "secret1" # https://tinkoff.github.io/investAPI/grpc/#tinkoff-invest-api_1
+    local_addr: "192.168.15.2" # use specific local network interface with ip provided
     figis:
       - "BBG333333333"
 
   - name: "subscriber2"
     token: "secret2" # https://tinkoff.github.io/investAPI/grpc/#tinkoff-invest-api_1
+    local_addr: "" # use any interface OS allows to use
     figis:
       - "BBG004730RP0"
       - "BBG00475KKY8"
