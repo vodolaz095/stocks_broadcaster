@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	DuplicateSubscriberError = errors.New("duplicate subscriber")
-	NoWritersError           = errors.New("no writers defined")
-	NoReadersError           = errors.New("no readers defined")
+	ErrDuplicateSubscriber = errors.New("duplicate subscriber")
+	ErrNoWriters           = errors.New("no writers defined")
+	ErrNoReaders           = errors.New("no readers defined")
 )

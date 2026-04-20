@@ -67,7 +67,6 @@ func (ws *WebServer) Start(ctx context.Context) error {
 		}
 		writer.Write([]byte("all systems online"))
 		writer.WriteHeader(http.StatusOK)
-		return
 	})
 	mux.HandleFunc("/metrics", func(writer http.ResponseWriter, _ *http.Request) {
 		ws.Service.MetricsSet.WritePrometheus(writer)

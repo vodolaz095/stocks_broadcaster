@@ -74,10 +74,10 @@ func (b *Broadcaster) StartWriters(ctx context.Context) (err error) {
 
 func (b *Broadcaster) StartReaders(ctx context.Context) (err error) {
 	if len(b.Writers) == 0 {
-		return NoWritersError
+		return ErrNoWriters
 	}
 	if len(b.Readers) == 0 {
-		return NoReadersError
+		return ErrNoReaders
 	}
 	if cap(b.Cord) < DefaultChannelBuffer {
 		return fmt.Errorf("channel buffer is %v, while at least %v is recommended",
