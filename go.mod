@@ -10,7 +10,7 @@ require (
 	github.com/vodolaz095/go-investAPI v1.11.1
 	github.com/vodolaz095/pkg v1.5.5
 	golang.org/x/sync v0.20.0
-	google.golang.org/grpc v1.80.0
+	google.golang.org/grpc v1.82.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
