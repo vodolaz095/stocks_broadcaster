@@ -21,33 +21,39 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Setup cache for Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.2'
-          cache-dependency-path: go.sum
+          go-version: '1.26.5'
+          cache-dependency-path: '**/go.sum'
 
-      - name: install govulncheck utility
+      - name: Install govulncheck utility
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
-      - name: scan for vulnerable packages
+      - name: Scan for vulnerable packages
         run: make vuln
 
-      - name: run unit test
+      - name: Run unit test
         env:
           REDIS_URL: redis://127.0.0.1:6379
         run: make test
 
-      - name: build binary for linux on AMD64
+      - name: Build binary for linux on AMD64
         env:
           GOOS: linux
           CGO_ENABLED: 0
           GOARCH: amd64
         run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/stocks_broadcaster_linux_amd64 main.go
 
-      - name: build binary for linux on ARM 6
+      - name: Build binary for linux on ARM 6
         env:
           GOOS: linux
           CGO_ENABLED: 0
@@ -55,7 +61,7 @@ jobs:
           GOARM: 6
         run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/stocks_broadcaster_linux_arm6 main.go
 
-      - name: build binary for linux on ARM 7
+      - name: Build binary for linux on ARM 7
         env:
           GOOS: linux
           CGO_ENABLED: 0
@@ -63,33 +69,35 @@ jobs:
           GOARM: 7
         run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/stocks_broadcaster_linux_arm7 main.go
 
-      - name: build binary for windows on amd64
+      - name: Build binary for windows on amd64
         env:
           GOOS: windows
           CGO_ENABLED: 0
           GOARCH: amd64
         run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/stocks_broadcaster.exe main.go
 
-      - name: build binary for macos on amd64
+      - name: Build binary for macos on amd64
         env:
           GOOS: darwin
           GOARCH: amd64
           CGO_ENABLED: 0
         run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/stocks_broadcaster_darwin_amd64 main.go
 
-      - name: make md5 signature file
+      - name: Make MD5 signature file
         run: md5sum build/* > build/stocks_broadcaster.md5
 
-      - name: expose build result
+      - name: Expose build result
         run: ls -l build/
 
-      - name: release
-        uses: ncipollo/release-action@v1
+      - name: Release
+        uses: ncipollo/release-action@v1.14.0
         with:
+          allowUpdates: true
           draft: true
           name: "Temporary release"
           body: "Code is generated from commit https://github.com/vodolaz095/stocks_broadcaster/commit/${{ github.sha }}"
           generateReleaseNotes: true
           commit: "${{ github.sha }}"
           tag: "${{ github.ref }}"
+          makeLatest: true
           artifacts: "build/stocks_broadcaster*"
